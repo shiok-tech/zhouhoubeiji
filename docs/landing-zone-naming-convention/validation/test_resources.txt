@@ -1,0 +1,112 @@
+# Test resource names for naming convention validation
+# Format: resource_name [# comment]
+
+# =============================================================================
+# VALID NAMES - These should pass validation
+# =============================================================================
+
+# VPC Resources
+network-acme-webapp-dmz-prd-vpc1
+security-acme-webapp-sec-prd-vpc1
+devops-acme-webapp-devop-nprd-vpc1
+log-acme-webapp-sha-dev-vpc1
+
+# Subnet Resources (Single AZ)
+acme-webapp-dmz-prd-vpc1_apig-publicsubnet1
+acme-webapp-dmz-prd-vpc1_nat-publicsubnet1
+acme-webapp-dmz-prd-vpc1_elb-publicsubnet2
+acme-webapp-sec-prd-vpc1_siem-privatesubnet1
+acme-webapp-sec-prd-vpc1_fal-privatesubnet1
+acme-webapp-devop-nprd-vpc1_devop-privatesubnet1
+
+# Subnet Resources (Multi-AZ)
+acme-webapp-dmz-prd-vpc1_apig-public-3a-subnet1
+acme-webapp-dmz-prd-vpc1_apig-public-3b-subnet1
+acme-webapp-dmz-prd-vpc1_nat-public-3a-subnet1
+acme-webapp-dmz-prd-vpc1_elb-public-3a-subnet2
+acme-webapp-dmz-prd-vpc1_elb-public-3b-subnet1
+
+# Network Services
+network-acme-webapp-prd-er1
+network-acme-webapp-prd-er2
+network-acme-webapp-dev-vpngw1
+network-acme-webapp-prd-nat1
+network-acme-webapp-prd-cfw1
+network-acme-webapp-nprd-vpncgw1
+
+# Security Services
+security-acme-webapp-secmaster1
+security-acme-webapp-cbh1
+security-acme-webapp-cbh2
+
+# Storage Services (OBS)
+security-acme-webapp-log-archive-bucket-prd-1
+security-acme-webapp-backup-archive-bucket-dev-1
+log-acme-webapp-audit-archive-bucket-prd-1
+
+# Large sequence numbers (should generate warnings)
+network-acme-webapp-dmz-prd-vpc100
+acme-webapp-dmz-prd-vpc1_apig-publicsubnet99
+network-acme-webapp-prd-er1000
+
+# =============================================================================
+# INVALID NAMES - These should fail validation
+# =============================================================================
+
+# Case sensitivity issues
+Network-Acme-WebApp-DMZ-PRD-VPC1
+SECURITY-ACME-WEBAPP-SEC-PRD-VPC1
+acme-webapp-dmz-PRD-vpc1_apig-publicsubnet1
+
+# Invalid separators
+acme:webapp:dmz:prd:vpc1:apig:publicsubnet1
+network_acme_webapp_dmz_prd_vpc1
+acme.webapp.dmz.prd.vpc1_apig.publicsubnet1
+
+# Wrong separator usage
+network-acme-webapp-dmz-prd-vpc1-apig-publicsubnet1
+acme_webapp_dmz_prd_vpc1-apig-publicsubnet1
+
+# Invalid sequence numbers (starting with 0)
+network-acme-webapp-dmz-prd-vpc0
+acme-webapp-dmz-prd-vpc1_apig-publicsubnet0
+
+# Invalid prefixes
+unknown-acme-webapp-dmz-prd-vpc1
+prod-acme-webapp-dmz-prd-vpc1
+
+# Invalid environments
+network-acme-webapp-dmz-production-vpc1
+security-acme-webapp-sec-staging-vpc1
+
+# Missing components
+acme-webapp-vpc1
+network-acme-dmz-prd-vpc1
+acme-webapp-dmz-prd-vpc1_publicsubnet1
+
+# Invalid characters
+network-acme@webapp-dmz-prd-vpc1
+acme-webapp-dmz-prd-vpc1_apig-public subnet1
+network-acme-webapp-dmz-prd-vpc1!
+
+# Too long names
+network-very-long-company-name-that-exceeds-reasonable-limits-very-long-project-name-dmz-prd-vpc1
+acme-very-long-project-name-that-should-not-be-this-long-dmz-prd-vpc1_very-long-service-name-publicsubnet1
+
+# Wrong resource type patterns
+network-acme-webapp-dmz-prd-subnet1
+acme-webapp-dmz-prd-vpc1_vpc1
+network-acme-webapp-dmz-prd-vpc1_apig-vpc1
+
+# Invalid availability zone format
+acme-webapp-dmz-prd-vpc1_apig-public-a3-subnet1
+acme-webapp-dmz-prd-vpc1_apig-public-zone3-subnet1
+acme-webapp-dmz-prd-vpc1_apig-public-3-subnet1
+
+# Missing required parts
+network-acme-webapp-prd-er
+acme-webapp-dmz-prd-apig-publicsubnet1
+security-acme-webapp-bucket-prd-1
+
+# Empty or whitespace
+# (empty line above)

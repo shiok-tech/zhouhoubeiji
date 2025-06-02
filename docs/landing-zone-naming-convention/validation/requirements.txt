@@ -1,0 +1,35 @@
+# Requirements for Enterprise Landing Zone Naming Convention Validator
+#
+# The core validator uses only Python standard library and has no external dependencies.
+# The packages below are optional and provide enhanced functionality.
+
+# Optional: Enhanced terminal output with colors
+# colorama>=0.4.4
+
+# Optional: YAML parsing support for advanced Ansible file processing
+# pyyaml>=5.4.1
+
+# Optional: Enhanced CLI interface with better argument parsing
+# click>=8.0.0
+
+# Optional: JSON schema validation for configuration files
+# jsonschema>=4.0.0
+
+# Optional: Rich text and beautiful formatting for terminal output
+# rich>=12.0.0
+
+# Optional: Progress bars for batch processing
+# tqdm>=4.60.0
+
+# Development dependencies (uncomment if needed)
+# pytest>=6.2.4          # Unit testing
+# pytest-cov>=2.12.1     # Coverage reporting
+# black>=21.6b0          # Code formatting
+# flake8>=3.9.2          # Linting
+# mypy>=0.910            # Type checking
+
+# Note: To install optional dependencies, uncomment the desired packages above and run:
+# pip install -r requirements.txt
+#
+# For basic usage, no additional packages are required:
+# python naming_validator.py --help

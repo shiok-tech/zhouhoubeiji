@@ -1,0 +1,244 @@
+# examples/ansible/landing_zone_playbook.yml
+---
+- name: Enterprise Landing Zone Deployment with Naming Convention
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    # Naming convention variables
+    company: "acme"
+    project: "webapp"
+    environment: "prd"
+    network_prefix: "network"
+    security_prefix: "security"
+    
+    # Multi-AZ configuration
+    use_availability_zones: false
+    availability_zones:
+      - "3a"
+      - "3b"
+      - "3c"
+    
+    # VPC CIDR configurations
+    vpc_cidrs:
+      dmz: "10.0.0.0/16"
+      security: "10.1.0.0/16"
+      devops: "10.2.0.0/16"
+    
+    # Subnet CIDR configurations
+    subnet_cidrs:
+      dmz:
+        apig_public: "10.0.1.0/24"
+        nat_public: "10.0.2.0/24"
+        elb_public: "10.0.3.0/24"
+      security:
+        siem_private: "10.1.1.0/24"
+        fal_private: "10.1.2.0/24"
+  
+  tasks:
+    - name: Validate naming convention variables
+      assert:
+        that:
+          - company is match("^[a-z]+$")
+          - project is match("^[a-z]+$")
+          - environment in ["dev", "nprd", "prd"]
+          - network_prefix in ["network", "security", "devops", "log"]
+        fail_msg: "Naming convention variables validation failed"
+        success_msg: "Naming convention variables are valid"
+    
+    - name: Generate VPC names following naming convention
+      set_fact:
+        vpc_names:
+          dmz: "{{ network_prefix }}-{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1"
+          security: "{{ security_prefix }}-{{ company }}-{{ project }}-sec-{{ environment }}-vpc1"
+    
+    - name: Generate subnet names (single AZ)
+      set_fact:
+        subnet_names:
+          apig_public: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_apig-publicsubnet1"
+          nat_public: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_nat-publicsubnet1"
+          elb_public: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_elb-publicsubnet1"
+          siem_private: "{{ company }}-{{ project }}-sec-{{ environment }}-vpc1_siem-privatesubnet1"
+          fal_private: "{{ company }}-{{ project }}-sec-{{ environment }}-vpc1_fal-privatesubnet1"
+      when: not use_availability_zones
+    
+    - name: Generate subnet names (multi AZ)
+      set_fact:
+        subnet_names:
+          apig_public_3a: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_apig-public-3a-subnet1"
+          apig_public_3b: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_apig-public-3b-subnet1"
+          nat_public_3a: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_nat-public-3a-subnet1"
+          elb_public_3a: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_elb-public-3a-subnet1"
+          elb_public_3b: "{{ company }}-{{ project }}-dmz-{{ environment }}-vpc1_elb-public-3b-subnet1"
+          siem_private_3a: "{{ company }}-{{ project }}-sec-{{ environment }}-vpc1_siem-private-3a-subnet1"
+      when: use_availability_zones
+    
+    - name: Generate network service names
+      set_fact:
+        service_names:
+          enterprise_router: "{{ network_prefix }}-{{ company }}-{{ project }}-{{ environment }}-er1"
+          er_attachment_dmz: "{{ network_prefix }}-er-attach-dmz-{{ environment }}-vpc-1"
+          nat_gateway: "{{ network_prefix }}-{{ company }}-{{ project }}-{{ environment }}-nat1"
+          vpn_gateway: "{{ network_prefix }}-{{ company }}-{{ project }}-{{ environment }}-vpngw1"
+          vpn_connection: "{{ network_prefix }}-{{ company }}-{{ project }}-{{ environment }}-vpn-connection1"
+          cloud_firewall: "{{ network_prefix }}-{{ company }}-{{ project }}-{{ environment }}-cfw1"
+          obs_bucket: "{{ security_prefix }}-{{ company }}-{{ project }}-log-archive-bucket-{{ environment }}-1"
+          security_master: "{{ security_prefix }}-{{ company }}-{{ project }}-secmaster1"
+          cloud_bastion: "{{ security_prefix }}-{{ company }}-{{ project }}-cbh1"
+    
+    - name: Validate generated names against naming convention
+      assert:
+        that:
+          - vpc_names.dmz is match("^(network|security|devops|log)-[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*$")
+          - vpc_names.security is match("^(network|security|devops|log)-[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*$")
+        fail_msg: "Generated VPC names do not match naming convention"
+        success_msg: "Generated VPC names are valid"
+    
+    - name: Validate subnet names (single AZ)
+      assert:
+        that:
+          - subnet_names.apig_public is match("^[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*_[a-z]+-[a-z]+subnet[1-9][0-9]*$")
+          - subnet_names.nat_public is match("^[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*_[a-z]+-[a-z]+subnet[1-9][0-9]*$")
+        fail_msg: "Generated subnet names do not match naming convention"
+        success_msg: "Generated subnet names are valid"
+      when: not use_availability_zones
+    
+    - name: Validate subnet names (multi AZ)
+      assert:
+        that:
+          - subnet_names.apig_public_3a is match("^[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*_[a-z]+-[a-z]+-[0-9][a-z]-subnet[1-9][0-9]*$")
+          - subnet_names.apig_public_3b is match("^[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*_[a-z]+-[a-z]+-[0-9][a-z]-subnet[1-9][0-9]*$")
+        fail_msg: "Generated multi-AZ subnet names do not match naming convention"
+        success_msg: "Generated multi-AZ subnet names are valid"
+      when: use_availability_zones
+    
+    - name: Display generated names
+      debug:
+        msg:
+          - "=== Generated Names Following Naming Convention ==="
+          - "VPC Names:"
+          - "  DMZ VPC: {{ vpc_names.dmz }}"
+          - "  Security VPC: {{ vpc_names.security }}"
+          - ""
+          - "Subnet Names:"
+          - "{{ subnet_names | to_nice_json }}"
+          - ""
+          - "Service Names:"
+          - "{{ service_names | to_nice_json }}"
+    
+    - name: Create deployment inventory
+      copy:
+        content: |
+          # Generated Landing Zone Resource Names
+          # Following Enterprise Naming Convention
+          
+          ## VPC Resources
+          vpc_dmz_name: "{{ vpc_names.dmz }}"
+          vpc_security_name: "{{ vpc_names.security }}"
+          
+          ## Subnet Resources
+          {% for name, value in subnet_names.items() %}
+          subnet_{{ name }}_name: "{{ value }}"
+          {% endfor %}
+          
+          ## Network Services
+          {% for name, value in service_names.items() %}
+          service_{{ name }}_name: "{{ value }}"
+          {% endfor %}
+          
+          ## Validation Status
+          naming_convention_validated: true
+          generated_timestamp: "{{ ansible_date_time.iso8601 }}"
+        dest: "./generated_names.yml"
+        mode: '0644'
+    
+    - name: Generate Terraform variables file
+      copy:
+        content: |
+          # Generated Terraform variables following naming convention
+          
+          company     = "{{ company }}"
+          project     = "{{ project }}"
+          environment = "{{ environment }}"
+          
+          vpc_names = {
+            dmz      = "{{ vpc_names.dmz }}"
+            security = "{{ vpc_names.security }}"
+          }
+          
+          subnet_names = {{ subnet_names | to_nice_json }}
+          
+          service_names = {{ service_names | to_nice_json }}
+          
+          use_availability_zones = {{ use_availability_zones | lower }}
+        dest: "./terraform.tfvars"
+        mode: '0644'
+
+# examples/ansible/group_vars/all.yml
+---
+# Default naming convention configuration
+
+# Core naming components
+company: "acme"
+project: "webapp"
+environment: "dev"
+
+# Account prefixes
+account_prefixes:
+  network: "network"
+  security: "security"
+  devops: "devops"
+  log: "log"
+
+# Service abbreviations
+service_abbreviations:
+  api_gateway: "apig"
+  nat_gateway: "nat"
+  load_balancer: "elb"
+  vpn_gateway: "vpngw"
+  direct_connect: "dc"
+  dns_service: "dns"
+  siem_platform: "siem"
+  firewall: "fal"
+  security_hub: "sha"
+  bastion_host: "cbh"
+  devops: "devop"
+  enterprise_router: "er"
+  cloud_firewall: "cfw"
+  customer_gateway: "vpncgw"
+  resource_manager: "ram"
+  security_master: "secmaster"
+  object_storage: "obs"
+
+# Zone identifiers
+zones:
+  - dmz
+  - acc
+  - sec
+  - sha
+  - cbh
+  - devop
+
+# Environment identifiers
+environments:
+  - dev
+  - nprd
+  - prd
+
+# Subnet types
+subnet_types:
+  - public
+  - private
+
+# Availability zones (optional)
+availability_zones:
+  - "3a"
+  - "3b"
+  - "3c"
+
+# Validation patterns
+validation_patterns:
+  vpc: "^(network|security|devops|log)-[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*$"
+  subnet: "^[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*_[a-z]+-[a-z]+subnet[1-9][0-9]*$"
+  subnet_with_az: "^[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]{3,4}-vpc[1-9][0-9]*_[a-z]+-[a-z]+-[0-9][a-z]-subnet[1-9][0-9]*$"
+  service: "^(network|security|devops|log)-[a-z]+-[a-z]+-[a-z]{3,4}-[a-z]+-[1-9][0-9]*$"
